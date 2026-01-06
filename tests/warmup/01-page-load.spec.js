@@ -38,8 +38,9 @@ test.describe('SupabaseTest - Chargement page', () => {
     await page.goto('/supabase-test')
 
     // Vérifier présence des formulaires d'inscription et connexion
-    await expect(page.getByText('Inscription')).toBeVisible()
-    await expect(page.getByText('Connexion')).toBeVisible()
+    // Utiliser getByRole avec exact:true pour éviter les ambiguïtés
+    await expect(page.getByRole('heading', { name: 'Inscription', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Connexion', exact: true })).toBeVisible()
 
     // Vérifier présence des boutons
     await expect(page.getByTestId('signup-submit-button')).toBeVisible()

@@ -13,7 +13,7 @@ Ce projet de tests (`gamefund-e2e`) contient deux types de documentation:
 - **✅ Créé pour gamefund-e2e** - Documents créés spécifiquement pour apprendre Playwright et documenter les tests (7 fichiers, ~178 KB)
 - **📥 Input du projet ../gamefund/** - Documents de référence copiés du projet principal GameFund pour comprendre l'architecture et les données (2 fichiers)
 
-**Total**: 9 fichiers de documentation dans `docs/`
+**Total**: 11 fichiers de documentation (9 dans `docs/` + 2 dans `fixtures/`)
 
 ---
 
@@ -37,9 +37,10 @@ Ces documents sont conçus pour quelqu'un qui découvre Playwright:
 - Analyser les échecs (screenshots, error context)
 - Mode debug pas-à-pas
 - Astuces et bonnes pratiques
+- **✨ Système de fixtures pour les tests** ← NOUVEAU
 - FAQ
 
-**Commencer par**: Section 1 → 3 → 6 → 7
+**Commencer par**: Section 1 → 3 → 6 → 7 → 9
 
 ---
 
@@ -148,11 +149,46 @@ Ces documents définissent la stratégie de tests globale:
 
 ---
 
+### 🧪 Documentation des Fixtures
+
+Documentation pour le système de fixtures (données de test réutilisables):
+
+#### 8. [FIXTURES_SETUP.md](FIXTURES_SETUP.md) ⚙️ **CONFIGURATION FIXTURES**
+**Quoi**: Guide complet de configuration du système de fixtures
+**Source**: ✅ Créé pour gamefund-e2e
+**Pour qui**: Développeurs configurant les tests avec comptes confirmés
+**Durée**: 15-30 min
+**Contenu**:
+- Qu'est-ce qu'une fixture et pourquoi l'utiliser
+- Configuration en 3 étapes (dotenv, .env, compte confirmé)
+- Structure des fixtures (CONFIRMED_USER, generateTestUser, INVALID_USERS)
+- Exemples d'utilisation dans les tests
+- Dépannage (password empty, invalid credentials, email not confirmed)
+- Bonnes pratiques et sécurité
+- Évolution future pour Phase 5
+
+**Lire**: Quand vous voulez utiliser des comptes de test confirmés
+
+---
+
+#### 9. [fixtures/README.md](../fixtures/README.md) 📚 **DOCUMENTATION FIXTURES**
+**Quoi**: Documentation technique des fixtures et de leur utilisation
+**Source**: ✅ Créé pour gamefund-e2e
+**Contenu**:
+- Configuration initiale
+- Utilisation dans les tests
+- Sécurité et bonnes pratiques
+- Dépannage
+
+**Lire**: Référence technique pour utiliser les fixtures
+
+---
+
 ### 📥 Documentation de Référence (Projet GameFund)
 
 Ces documents proviennent du projet principal et servent de référence:
 
-#### 8. [ARCHITECTURE.md](ARCHITECTURE.md) 🏗️ **ARCHITECTURE GAMEFUND**
+#### 10. [ARCHITECTURE.md](ARCHITECTURE.md) 🏗️ **ARCHITECTURE GAMEFUND**
 **Quoi**: Architecture du projet principal (gamefund)
 **Source**: 📥 Input du projet ../gamefund/docs/
 **Contenu**:
@@ -165,7 +201,7 @@ Ces documents proviennent du projet principal et servent de référence:
 
 ---
 
-#### 9. [SUPABASE_SETUP.md](SUPABASE_SETUP.md) 🗄️ **BASE DE DONNÉES**
+#### 11. [SUPABASE_SETUP.md](SUPABASE_SETUP.md) 🗄️ **BASE DE DONNÉES**
 **Quoi**: Schéma de la base de données Supabase
 **Source**: 📥 Input du projet ../gamefund/docs/
 **Contenu**:
@@ -241,7 +277,33 @@ TOTAL: ~5-7 heures
 
 ---
 
-### Parcours 3: Comprendre le Projet (Vue d'ensemble)
+### Parcours 3: Configurer les Fixtures (Nouveau)
+
+**Objectif**: Mettre en place un système de fixtures pour tester avec des comptes confirmés
+
+```
+1. Lire PLAYWRIGHT_GUIDE.md (section 9)
+   └→ 15-20 min
+   └→ Comprendre les fixtures et leur utilité
+
+2. Lire FIXTURES_SETUP.md
+   └→ 15-20 min
+   └→ Configuration complète du système
+
+3. Configurer .env
+   └→ 5 min
+   └→ Ajouter TEST_USER_PASSWORD
+
+4. Tester signin.spec.js
+   └→ 5 min
+   └→ Vérifier que les tests passent
+
+TOTAL: ~40-50 min
+```
+
+---
+
+### Parcours 4: Comprendre le Projet (Vue d'ensemble)
 
 **Objectif**: Comprendre le contexte et la stratégie
 
@@ -291,6 +353,11 @@ TOTAL: ~1h15-1h45
 → **TESTING.md**
 → **IMPLEMENTATION_SUMMARY.md**
 
+### Je veux utiliser des comptes de test confirmés
+→ **PLAYWRIGHT_GUIDE.md** (section 9: Fixtures)
+→ **FIXTURES_SETUP.md**
+→ **fixtures/README.md**
+
 ---
 
 ## 📂 Arborescence Complète
@@ -309,6 +376,10 @@ docs/
 │   ├── WARMUP_PLAN.md          # Plan Phase 4.5
 │   ├── IMPLEMENTATION_SUMMARY.md # Résumé technique
 │   └── TESTING.md              # Stratégie globale
+│
+├── 🧪 Documentation Fixtures (✅ créés pour gamefund-e2e)
+│   ├── FIXTURES_SETUP.md       # Configuration fixtures
+│   └── fixtures/README.md      # Doc technique fixtures
 │
 └── 📥 Référence GameFund (inputs du projet principal)
     ├── ARCHITECTURE.md         # Architecture GameFund

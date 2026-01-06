@@ -423,6 +423,143 @@ console.log(await page.getByTestId('element').textContent())
 
 ---
 
+## 🚨 Erreurs Courantes
+
+### Strict Mode Violation
+
+**Erreur**: `strict mode violation: getByText('Connexion') resolved to 5 elements`
+
+**Signification**: Votre sélecteur trouve plusieurs éléments au lieu d'un seul.
+
+**Solutions (par ordre de préférence)**:
+
+```javascript
+// ❌ AVANT (ambigu)
+await expect(page.getByText('Connexion')).toBeVisible()
+
+// 🎯 Solution IDÉALE: Demander un data-testid à l'équipe dev
+await expect(page.getByTestId('signin-heading')).toBeVisible()
+
+// ✅ Solution 1: getByRole avec exact (si pas de data-testid)
+await expect(page.getByRole('heading', { name: 'Connexion', exact: true })).toBeVisible()
+
+// ✅ Solution 2: filter avec regex
+await expect(page.getByText('Connexion').filter({ hasText: /^Connexion$/ })).toBeVisible()
+
+// ⚠️ Solution 3: .first() (FRAGILE - éviter si possible)
+await expect(page.getByText('Connexion').first()).toBeVisible()
+```
+
+**Règle d'or**:
+1. **Demandez un `data-testid` à l'équipe dev** (meilleure solution)
+2. Sinon, utilisez `getByRole` avec `exact: true`
+
+**💬 Message pour l'équipe dev**:
+```
+"Pour les tests E2E, pouvez-vous ajouter data-testid='signin-heading'
+sur le titre Connexion ? Ça rendra les tests plus robustes."
+```
+
+**Voir**: [PLAYWRIGHT_GUIDE.md - Section 6.1](PLAYWRIGHT_GUIDE.md#-erreur-courante-strict-mode-violation) pour plus de détails
+
+---
+
+## ⚠️ Problématiques Supabase en Tests
+
+### Email Invalide: `@example.com` rejeté
+
+**Erreur**: `Email address "test@example.com" is invalid`
+
+**Cause**: Supabase rejette les domaines d'email considérés comme invalides ou de test, notamment `@example.com`.
+
+**Solutions**:
+
+```javascript
+// ❌ NE PAS UTILISER
+const email = `test${timestamp}@example.com`
+
+// ✅ Utiliser des domaines acceptés par Supabase
+const email = `test${timestamp}@gmail.com`
+const email = `test${timestamp}@test.com`
+const email = `test${timestamp}@mailinator.com`
+```
+
+### Confirmation Email Requise
+
+**Problème**: Supabase nécessite que l'utilisateur confirme son email avant de pouvoir se connecter.
+
+**Impact sur les tests**:
+- Impossible de créer un compte ET se connecter automatiquement
+- Nécessite une intervention manuelle (cliquer sur le lien dans l'email)
+
+**Solutions possibles**:
+
+**Option 1: Utiliser un compte pré-confirmé** (RECOMMANDÉ pour tests)
+```javascript
+// Créer un fichier fixtures/test-users.js
+export const TEST_USERS = {
+  confirmed: {
+    email: 'etudesportsante2025@gmail.com',
+    password: 'VotreMotDePasse',
+    displayName: 'Test User'
+  }
+}
+
+// Dans le test
+import { TEST_USERS } from '../fixtures/test-users.js'
+
+test('connexion avec compte confirmé', async ({ page }) => {
+  await page.goto('/supabase-test')
+  await page.getByTestId('signin-email-input').fill(TEST_USERS.confirmed.email)
+  await page.getByTestId('signin-password-input').fill(TEST_USERS.confirmed.password)
+  await page.getByTestId('signin-submit-button').click()
+
+  await expect(page.getByTestId('success-message')).toBeVisible()
+})
+```
+
+**Option 2: Désactiver la confirmation email dans Supabase** (pour environnement de TEST uniquement)
+- Aller dans Supabase Dashboard > Authentication > Email Auth
+- Cocher "Disable email confirmation"
+- ⚠️ **UNIQUEMENT pour un projet de test, JAMAIS en production**
+
+**Option 3: Utiliser l'API Supabase Admin pour confirmer automatiquement**
+```javascript
+// Nécessite une clé API Admin (service_role)
+// ⚠️ Dangereux - ne jamais exposer cette clé dans le code client
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY // Clé Admin
+)
+
+// Confirmer l'email via l'API Admin
+await supabaseAdmin.auth.admin.updateUserById(userId, {
+  email_confirmed_at: new Date().toISOString()
+})
+```
+
+**Option 4: Utiliser test.skip() pour les tests nécessitant confirmation**
+```javascript
+test.skip('devrait se connecter après inscription', async ({ page }) => {
+  // ⚠️ TEST DÉSACTIVÉ: Nécessite confirmation email
+  // Pour activer ce test:
+  // 1. Désactiver la confirmation email dans Supabase (test uniquement)
+  // 2. OU utiliser un compte pré-confirmé
+  // 3. OU implémenter la confirmation automatique via API Admin
+})
+```
+
+**Workflow recommandé pour Phase 5**:
+1. Créer un environnement Supabase dédié aux tests
+2. Désactiver la confirmation email sur cet environnement
+3. OU créer quelques comptes de test confirmés manuellement
+4. Les stocker dans `fixtures/test-users.js` (ne pas commit les mots de passe!)
+5. Utiliser ces comptes dans les tests
+
+---
+
 ## 🔗 Liens Rapides
 
 - **Guide complet**: [PLAYWRIGHT_GUIDE.md](PLAYWRIGHT_GUIDE.md)

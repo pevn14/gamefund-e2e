@@ -14,8 +14,10 @@
 4. [Les Sélecteurs Playwright](#4-les-sélecteurs-playwright)
 5. [Les Assertions](#5-les-assertions)
 6. [Analyser les Échecs](#6-analyser-les-échecs)
+   - 6.1 [Erreur Courante: Strict Mode Violation](#-erreur-courante-strict-mode-violation)
 7. [Mode Debug pas-à-pas](#7-mode-debug-pas-à-pas)
 8. [Astuces et Bonnes Pratiques](#8-astuces-et-bonnes-pratiques)
+9. [Système de Fixtures pour les Tests](#9-système-de-fixtures-pour-les-tests)
 
 ---
 
@@ -135,6 +137,17 @@ test('description de ce qu\'on teste', async ({ page }) => {
 
 ## 3. Commandes pour Jouer les Tests
 
+### ⚙️ Environnement: SSH vs Interface Graphique
+
+**Votre situation détermine quelles commandes vous pouvez utiliser:**
+
+| Environnement | Commandes disponibles | Recommandation |
+|---------------|----------------------|----------------|
+| **🖥️ Machine locale avec interface graphique** (Linux desktop) | Toutes | `npm run test:ui` |
+| **🔌 SSH depuis Windows** (sans X11) | Ligne de commande uniquement | `npm test` + `npm run test:report` |
+
+---
+
 ### 📋 Commandes de Base
 
 #### Lancer TOUS les tests
@@ -142,14 +155,16 @@ test('description de ce qu\'on teste', async ({ page }) => {
 npm test
 ```
 **Utilisation**: Tests rapides, CI/CD
+**Environnement**: ✅ SSH ou Local
 **Sortie**: Texte dans le terminal
 
 ---
 
-#### Mode UI (RECOMMANDÉ pour apprendre)
+#### Mode UI (Interface graphique - Machine locale UNIQUEMENT)
 ```bash
 npm run test:ui
 ```
+**Environnement**: ⚠️ **Nécessite interface graphique** (machine Linux locale)
 **Utilisation**: Explorer, débugger, comprendre
 **Avantages**:
 - ✅ Interface graphique interactive
@@ -157,6 +172,8 @@ npm run test:ui
 - ✅ Rejouable à l'infini
 - ✅ Timeline des actions
 - ✅ Screenshots automatiques
+
+**⚠️ En SSH**: Cette commande échouera avec l'erreur "XServer not running"
 
 **Capture d'écran**:
 ```
@@ -174,15 +191,18 @@ npm run test:ui
 
 ---
 
-#### Mode Headed (Voir le Navigateur)
+#### Mode Headed (Voir le Navigateur - Machine locale UNIQUEMENT)
 ```bash
 npm run test:headed
 ```
+**Environnement**: ⚠️ **Nécessite interface graphique** (machine Linux locale)
 **Utilisation**: Voir ce qui se passe dans le navigateur
 **Avantages**:
 - ✅ Fenêtre Chrome s'ouvre
 - ✅ Voir les actions en direct
 - ✅ Comprendre les interactions
+
+**⚠️ En SSH**: Cette commande échouera avec l'erreur "XServer not running"
 
 **Différence avec test:ui**:
 - `test:ui` = Interface Playwright + navigateur
@@ -190,16 +210,19 @@ npm run test:headed
 
 ---
 
-#### Mode Debug (Pas-à-Pas)
+#### Mode Debug (Pas-à-Pas - Machine locale UNIQUEMENT)
 ```bash
 npm run test:debug
 ```
+**Environnement**: ⚠️ **Nécessite interface graphique** (machine Linux locale)
 **Utilisation**: Débugger un test qui échoue
 **Avantages**:
 - ✅ Pause à chaque étape
 - ✅ Inspector Playwright s'ouvre
 - ✅ Console pour tester des commandes
 - ✅ Contrôles: Play, Pause, Step Over
+
+**⚠️ En SSH**: Cette commande échouera. Utilisez les alternatives ci-dessous.
 
 **Capture d'écran**:
 ```
@@ -222,12 +245,63 @@ npm run test:debug
 ```bash
 npm run test:report
 ```
+**Environnement**: ✅ SSH ou Local
 **Utilisation**: Après avoir lancé les tests, voir un rapport détaillé
 **Avantages**:
 - ✅ Rapport visuel dans le navigateur
 - ✅ Screenshots des échecs
 - ✅ Traces des actions
 - ✅ Statistiques
+
+**En SSH**: Le rapport s'ouvrira dans votre navigateur Windows via WSL
+
+---
+
+### 🔌 Alternatives pour SSH (Sans Interface Graphique)
+
+Si vous êtes en SSH, voici les commandes équivalentes:
+
+#### Lancer avec rapport détaillé
+```bash
+# Lancer les tests et générer un rapport HTML
+npx playwright test --reporter=html
+
+# Puis ouvrir le rapport (s'ouvre dans Windows)
+npm run test:report
+```
+
+#### Voir les résultats dans le terminal
+```bash
+# Avec liste détaillée
+npx playwright test --reporter=list
+
+# Avec sortie complète
+npx playwright test --reporter=line
+
+# Avec informations de debug
+DEBUG=pw:api npx playwright test
+```
+
+#### Debug en ligne de commande
+```bash
+# Activer le mode debug (logs détaillés)
+PWDEBUG=console npx playwright test tests/warmup/page-load.spec.js
+
+# Avec breakpoints manuels (ajouter await page.pause() dans le code)
+npx playwright test tests/warmup/page-load.spec.js
+```
+
+#### Analyser les échecs
+```bash
+# Regarder les screenshots d'échec
+ls -la test-results/
+
+# Lire le dernier contexte d'erreur
+cat test-results/*/error-context.md | less
+
+# Voir la dernière capture d'écran (si vous avez un viewer d'images)
+ls -t test-results/*/*.png | head -1
+```
 
 ---
 
@@ -281,15 +355,20 @@ npx playwright test -g "devrait créer un nouveau compte" --debug
 
 ### 📊 Tableau Récapitulatif
 
-| Commande | Quand l'utiliser | Sortie | Vitesse |
-|----------|------------------|--------|---------|
-| `npm test` | Vérifier que tout passe | Terminal | ⚡ Rapide |
-| `npm run test:ui` | **Apprendre, explorer** | Interface graphique | 🐢 Lent |
-| `npm run test:headed` | Voir le navigateur | Navigateur visible | ⚡ Rapide |
-| `npm run test:debug` | Débugger un problème | Inspector + navigateur | 🐢 Manuel |
-| `npm run test:report` | Voir les résultats détaillés | HTML dans navigateur | ⚡ Instantané |
-| `npx playwright test fichier.spec.js` | Tester un fichier | Terminal | ⚡ Rapide |
-| `npx playwright test -g "nom"` | Tester un test spécifique | Terminal | ⚡ Rapide |
+| Commande | Quand l'utiliser | Sortie | Env | Vitesse |
+|----------|------------------|--------|-----|---------|
+| `npm test` | Vérifier que tout passe | Terminal | SSH/Local | ⚡ Rapide |
+| `npm run test:ui` | **Apprendre, explorer** | Interface graphique | 🖥️ Local only | 🐢 Lent |
+| `npm run test:headed` | Voir le navigateur | Navigateur visible | 🖥️ Local only | ⚡ Rapide |
+| `npm run test:debug` | Débugger un problème | Inspector + navigateur | 🖥️ Local only | 🐢 Manuel |
+| `npm run test:report` | Voir les résultats détaillés | HTML dans navigateur | SSH/Local | ⚡ Instantané |
+| `npx playwright test fichier.spec.js` | Tester un fichier | Terminal | SSH/Local | ⚡ Rapide |
+| `npx playwright test -g "nom"` | Tester un test spécifique | Terminal | SSH/Local | ⚡ Rapide |
+| `npx playwright test --reporter=list` | Résultats détaillés en SSH | Terminal détaillé | SSH/Local | ⚡ Rapide |
+
+**Légende Env**:
+- `SSH/Local` = ✅ Fonctionne partout
+- `🖥️ Local only` = ⚠️ Nécessite interface graphique (machine Linux locale)
 
 ---
 
@@ -710,6 +789,240 @@ cat test-results/warmup-signup-*/error-context.md | grep -A 2 "Email address"
 
 ---
 
+### 🚨 Erreur Courante: Strict Mode Violation
+
+Une des erreurs les plus fréquentes en Playwright est la **"strict mode violation"**.
+
+#### Qu'est-ce que c'est ?
+
+Cette erreur signifie que **votre sélecteur a trouvé plusieurs éléments** au lieu d'un seul, et Playwright ne sait pas lequel utiliser.
+
+#### Exemple d'Erreur Réelle
+
+**Test qui échoue**:
+```javascript
+await expect(page.getByText('Connexion')).toBeVisible()
+```
+
+**Message d'erreur**:
+```
+Error: strict mode violation: getByText('Connexion') resolved to 5 elements:
+    1) <h3>Test de connexion Supabase</h3>
+    2) <button>Retester la connexion</button>
+    3) <h3>État de connexion utilisateur</h3>
+    4) <div>✅ Connexion à Supabase réussie !</div>
+    5) <h3>Connexion</h3>  ← C'est celui-ci qu'on veut!
+```
+
+#### Pourquoi ça arrive ?
+
+Le mot **"Connexion"** apparaît 5 fois dans la page:
+- Dans le titre "Test de **connexion** Supabase"
+- Dans le bouton "Retester la **connexion**"
+- Dans "État de **connexion** utilisateur"
+- Dans le message "**Connexion** à Supabase réussie"
+- Dans le titre du formulaire "**Connexion**" ← **Celui qu'on cherche !**
+
+Playwright refuse d'agir car il ne sait pas **lequel** vous voulez tester.
+
+---
+
+#### 💡 Solution Idéale: Demander un `data-testid` (LA MEILLEURE)
+
+**La meilleure solution de toutes est de demander à l'équipe dev d'ajouter un `data-testid`** :
+
+**Dans le code React/HTML** :
+```jsx
+<h3 data-testid="signin-heading">Connexion</h3>
+```
+
+**Dans votre test** :
+```javascript
+// ✅ Parfait - Simple, clair, robuste
+await expect(page.getByTestId('signin-heading')).toBeVisible()
+```
+
+**Pourquoi c'est la meilleure solution ?**
+- ✅ **Le plus fiable** - Ne casse jamais, même si le texte ou la structure change
+- ✅ **Le plus rapide** - Playwright trouve l'élément instantanément
+- ✅ **Le plus clair** - L'intention est évidente pour tous
+- ✅ **Facilite la collaboration** - Les devs savent quels éléments sont testés
+
+**Convention de nommage** :
+```
+[section]-[element]-[type]
+
+Exemples :
+- signin-heading
+- signup-submit-button
+- user-email-input
+- success-message
+```
+
+**⚠️ Important** : Si vous ne pouvez pas obtenir de `data-testid` (élément externe, bibliothèque tierce, etc.), utilisez les solutions ci-dessous.
+
+---
+
+#### ✅ Solution 1: Utiliser `getByRole` avec `exact: true` (RECOMMANDÉ si pas de data-testid)
+
+**Avant (ambigu)**:
+```javascript
+await expect(page.getByText('Connexion')).toBeVisible()
+```
+
+**Après (précis)**:
+```javascript
+await expect(page.getByRole('heading', { name: 'Connexion', exact: true })).toBeVisible()
+```
+
+**Pourquoi c'est mieux ?**
+- ✅ Cherche uniquement un `<h1>`, `<h2>`, ou `<h3>` (heading)
+- ✅ Avec exactement le texte "Connexion" (pas "Test de connexion")
+- ✅ Respecte la sémantique HTML
+- ✅ Plus robuste et maintenable
+
+---
+
+#### Solution 2: Utiliser `.first()` ou `.nth()`
+
+```javascript
+// Prendre le premier élément trouvé
+await expect(page.getByText('Connexion').first()).toBeVisible()
+
+// Ou le 5ème (index 4)
+await expect(page.getByText('Connexion').nth(4)).toBeVisible()
+```
+
+**⚠️ Attention**: Cette solution est **fragile**!
+- Si l'ordre des éléments change, le test casse
+- Difficile à comprendre pour quelqu'un qui lit le code
+- **Utilisez cette solution seulement si vous n'avez pas le choix**
+
+---
+
+#### Solution 3: Utiliser un Locator CSS Plus Précis
+
+```javascript
+// Avec un sélecteur CSS ciblant le contexte
+await expect(page.locator('div.signin-form h3')).toBeVisible()
+```
+
+**Quand l'utiliser ?**
+- Quand l'élément a une classe CSS unique
+- Quand la structure HTML est stable
+
+---
+
+#### Solution 4: Utiliser `filter`
+
+```javascript
+// Filtrer par texte exact avec regex
+await expect(
+  page.getByText('Connexion').filter({ hasText: /^Connexion$/ })
+).toBeVisible()
+```
+
+**Explication**:
+- `/^Connexion$/` = Commence par "Connexion" (`^`) ET finit par "Connexion" (`$`)
+- Donc exclut "Test de connexion", "Retester la connexion", etc.
+
+---
+
+#### 📊 Comparaison des Solutions
+
+| Solution | Avantages | Inconvénients | Recommandé ? |
+|----------|-----------|---------------|--------------|
+| `getByRole` + `exact: true` | ✅ Sémantique, robuste, clair | Nécessite de connaître le rôle | ⭐⭐⭐⭐⭐ |
+| `getByTestId` | ✅ Le plus fiable et précis | Nécessite d'ajouter data-testid | ⭐⭐⭐⭐⭐ |
+| `filter` avec regex | ✅ Flexible | Nécessite de connaître regex | ⭐⭐⭐⭐ |
+| Locator CSS | ✅ Précis si bonne structure | Fragile si HTML change | ⭐⭐⭐ |
+| `.first()` ou `.nth()` | ✅ Simple | ❌ Très fragile | ⭐ |
+
+---
+
+#### 🎯 Règle d'Or
+
+**Dans l'ordre de préférence, utilisez**:
+
+1. **`data-testid`** si disponible (⭐⭐⭐⭐⭐ LE MEILLEUR)
+   ```javascript
+   page.getByTestId('signin-heading')
+   ```
+   **Si pas disponible** : Demandez à l'équipe dev de l'ajouter !
+
+2. **`getByRole`** avec `exact: true` (⭐⭐⭐⭐ sémantique)
+   ```javascript
+   page.getByRole('heading', { name: 'Connexion', exact: true })
+   ```
+
+3. **`filter`** avec regex (⭐⭐⭐ flexible)
+   ```javascript
+   page.getByText('Connexion').filter({ hasText: /^Connexion$/ })
+   ```
+
+4. **`.first()`** en dernier recours seulement (⭐ fragile)
+   ```javascript
+   page.getByText('Connexion').first() // ⚠️ Éviter si possible!
+   ```
+
+**💬 Communication avec l'équipe dev** :
+```
+"Salut, pour les tests E2E, est-ce qu'on pourrait ajouter
+data-testid='signin-heading' sur le titre Connexion ?
+Ça rendrait les tests beaucoup plus robustes. Merci !"
+```
+
+---
+
+#### 🧪 Exercice Pratique
+
+**Défi**: Corrigez cette erreur de strict mode
+
+**Code qui échoue**:
+```javascript
+// Ce test échoue avec "strict mode violation: resolved to 3 elements"
+await expect(page.getByText('S\'inscrire')).toBeVisible()
+```
+
+**Question**: Le mot "S'inscrire" apparaît 3 fois:
+1. Dans un titre `<h3>S'inscrire</h3>`
+2. Dans un bouton `<button>S'inscrire maintenant</button>`
+3. Dans un lien `<a>S'inscrire gratuitement</a>`
+
+**Votre mission**: Écrivez 3 sélecteurs différents, un pour chaque élément.
+
+**Solutions**:
+```javascript
+// 1. Le titre <h3>
+await expect(page.getByRole('heading', { name: 'S\'inscrire', exact: true })).toBeVisible()
+
+// 2. Le bouton
+await expect(page.getByRole('button', { name: /S'inscrire/ })).toBeVisible()
+
+// 3. Le lien
+await expect(page.getByRole('link', { name: /S'inscrire/ })).toBeVisible()
+```
+
+---
+
+#### 💡 Astuce de Debug
+
+Si vous avez une erreur "strict mode violation", utilisez cette commande pour **voir tous les éléments** trouvés:
+
+```javascript
+// Dans le mode debug, tapez dans la console:
+await page.getByText('Connexion').count()
+// → Retourne: 5
+
+// Voir le texte de chacun:
+const elements = await page.getByText('Connexion').all()
+for (const el of elements) {
+  console.log(await el.textContent())
+}
+```
+
+---
+
 ### 🎯 Méthode Universelle de Débugging
 
 ```bash
@@ -1050,6 +1363,275 @@ test('signup with valid user', async ({ page }) => {
 2. ✅ Le faire passer ✅
 3. ✅ Le faire échouer volontairement ❌
 4. ✅ Comprendre pourquoi
+
+---
+
+## 9. Système de Fixtures pour les Tests
+
+### 🎯 Qu'est-ce qu'une Fixture?
+
+Une **fixture** est un ensemble de données de test réutilisables. Au lieu de créer un nouvel utilisateur à chaque test, on utilise des utilisateurs pré-configurés.
+
+### Pourquoi Utiliser des Fixtures?
+
+**Sans fixtures** (problématique):
+```javascript
+test('connexion', async ({ page }) => {
+  // Créer un nouveau compte
+  await page.getByTestId('signup-email-input').fill('test123@example.com')
+  await page.getByTestId('signup-password-input').fill('pass123')
+  await page.getByTestId('signup-submit-button').click()
+
+  // ❌ Problème 1: Email doit être confirmé (impossible en automatique)
+  // ❌ Problème 2: Créer un compte à chaque test (lent)
+  // ❌ Problème 3: Email en dur (pas unique)
+})
+```
+
+**Avec fixtures** (solution):
+```javascript
+import { CONFIRMED_USER } from '../fixtures/test-users.js'
+
+test('connexion', async ({ page }) => {
+  // Utiliser un compte pré-confirmé
+  await page.getByTestId('signin-email-input').fill(CONFIRMED_USER.email)
+  await page.getByTestId('signin-password-input').fill(CONFIRMED_USER.password)
+  await page.getByTestId('signin-submit-button').click()
+
+  // ✅ Le compte existe déjà
+  // ✅ L'email est déjà confirmé
+  // ✅ Réutilisable dans tous les tests
+})
+```
+
+### Configuration des Fixtures
+
+#### Étape 1: Installer dotenv
+
+```bash
+npm install --save-dev dotenv
+```
+
+#### Étape 2: Créer le fichier .env
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Ajouter vos credentials:
+```env
+TEST_USER_EMAIL=etudesportsante2025@gmail.com
+TEST_USER_PASSWORD=VotreMotDePasseIci
+```
+
+**⚠️ Important**: Le fichier `.env` est dans `.gitignore` et ne sera JAMAIS commité.
+
+#### Étape 3: Vérifier la configuration de Playwright
+
+Le fichier `playwright.config.js` doit charger dotenv:
+
+```javascript
+import { defineConfig, devices } from '@playwright/test'
+import 'dotenv/config'  // ← Charge les variables d'environnement
+
+export default defineConfig({
+  // ... config
+})
+```
+
+### Types de Fixtures Disponibles
+
+Notre fichier [fixtures/test-users.js](../fixtures/test-users.js) fournit:
+
+#### 1. Compte Confirmé (CONFIRMED_USER)
+
+Pour tester connexion/déconnexion avec un compte qui existe déjà.
+
+```javascript
+import { CONFIRMED_USER } from '../fixtures/test-users.js'
+
+test('se connecter', async ({ page }) => {
+  await page.goto('/supabase-test')
+  await page.getByTestId('signin-email-input').fill(CONFIRMED_USER.email)
+  await page.getByTestId('signin-password-input').fill(CONFIRMED_USER.password)
+  await page.getByTestId('signin-submit-button').click()
+
+  await expect(page.getByTestId('success-message')).toBeVisible()
+})
+```
+
+#### 2. Générer un Nouvel Utilisateur
+
+Pour tester les inscriptions avec des emails uniques.
+
+```javascript
+import { generateTestUser } from '../fixtures/test-users.js'
+
+test('inscription', async ({ page }) => {
+  const newUser = generateTestUser()  // Email unique à chaque fois
+
+  await page.goto('/supabase-test')
+  await page.getByTestId('signup-email-input').fill(newUser.email)
+  await page.getByTestId('signup-password-input').fill(newUser.password)
+  await page.getByTestId('signup-display-name-input').fill(newUser.displayName)
+  await page.getByTestId('signup-submit-button').click()
+
+  await expect(page.getByTestId('success-message')).toContainText('Vérifiez votre email')
+})
+```
+
+#### 3. Utilisateurs Invalides (INVALID_USERS)
+
+Pour tester les cas d'erreur.
+
+```javascript
+import { INVALID_USERS } from '../fixtures/test-users.js'
+
+test('erreur email invalide', async ({ page }) => {
+  const invalid = INVALID_USERS.invalidEmailFormat
+
+  await page.goto('/supabase-test')
+  await page.getByTestId('signin-email-input').fill(invalid.email)
+  await page.getByTestId('signin-password-input').fill(invalid.password)
+  await page.getByTestId('signin-submit-button').click()
+
+  await expect(page.getByTestId('error-message')).toBeVisible()
+})
+```
+
+### Exemple Concret: signin.spec.js
+
+Voici comment [tests/warmup/signin.spec.js](../tests/warmup/signin.spec.js) utilise les fixtures:
+
+```javascript
+import { test, expect } from '@playwright/test'
+import { CONFIRMED_USER, INVALID_USERS, generateTestUser } from '../fixtures/test-users.js'
+
+test.describe('SupabaseTest - Connexion', () => {
+  // Test avec email invalide
+  test('erreur si email invalide', async ({ page }) => {
+    const invalidUser = INVALID_USERS.invalidEmailFormat
+    await page.goto('/supabase-test')
+    await page.getByTestId('signin-email-input').fill(invalidUser.email)
+    await page.getByTestId('signin-password-input').fill(invalidUser.password)
+    await page.getByTestId('signin-submit-button').click()
+
+    await expect(page.getByTestId('error-message')).toBeVisible()
+  })
+
+  // Test avec compte confirmé
+  test('connexion réussie', async ({ page }) => {
+    await page.goto('/supabase-test')
+    await page.getByTestId('signin-email-input').fill(CONFIRMED_USER.email)
+    await page.getByTestId('signin-password-input').fill(CONFIRMED_USER.password)
+    await page.getByTestId('signin-submit-button').click()
+
+    await expect(page.getByTestId('success-message')).toContainText('Connexion réussie')
+    await expect(page.getByTestId('signout-button')).toBeVisible()
+  })
+
+  // Test d'inscription avec nouvel utilisateur
+  test('inscription nouveau compte', async ({ page }) => {
+    const newUser = generateTestUser()
+    await page.goto('/supabase-test')
+    await page.getByTestId('signup-email-input').fill(newUser.email)
+    await page.getByTestId('signup-password-input').fill(newUser.password)
+    await page.getByTestId('signup-display-name-input').fill(newUser.displayName)
+    await page.getByTestId('signup-submit-button').click()
+
+    await expect(page.getByTestId('success-message')).toContainText('Vérifiez votre email')
+  })
+})
+```
+
+### Bonnes Pratiques avec les Fixtures
+
+#### ✅ À FAIRE
+
+```javascript
+// 1. Réutiliser le même compte confirmé
+test('test 1', async ({ page }) => {
+  await login(page, CONFIRMED_USER)  // ← Toujours le même
+})
+
+test('test 2', async ({ page }) => {
+  await login(page, CONFIRMED_USER)  // ← Réutilisation
+})
+
+// 2. Générer des nouveaux utilisateurs pour les inscriptions
+test('inscription 1', async ({ page }) => {
+  const user1 = generateTestUser()  // ← Email unique
+})
+
+test('inscription 2', async ({ page }) => {
+  const user2 = generateTestUser()  // ← Autre email unique
+})
+
+// 3. Centraliser les données invalides
+const invalid = INVALID_USERS.invalidEmailFormat
+```
+
+#### ❌ À ÉVITER
+
+```javascript
+// ❌ NE PAS mettre les mots de passe en dur
+const password = 'MonMotDePasseSecret123'  // DANGER!
+
+// ✅ TOUJOURS utiliser les fixtures
+const password = CONFIRMED_USER.password  // Depuis .env
+```
+
+### Problèmes Courants et Solutions
+
+#### Erreur: "Password is empty"
+
+**Cause**: Le fichier `.env` n'est pas configuré.
+
+**Solution**:
+```bash
+# Créer .env depuis le template
+cp .env.example .env
+
+# Éditer et ajouter le mot de passe
+nano .env
+```
+
+#### Erreur: "Invalid login credentials"
+
+**Cause**: Le mot de passe dans `.env` ne correspond pas au compte Supabase.
+
+**Solution**: Vérifier que le mot de passe dans `.env` est le bon.
+
+#### Erreur: "Email not confirmed"
+
+**Cause**: Le compte existe mais l'email n'a pas été confirmé.
+
+**Solution**: Aller dans votre boîte email et cliquer sur le lien de confirmation Supabase.
+
+### Documentation Complète des Fixtures
+
+Pour en savoir plus sur le système de fixtures:
+
+- **[FIXTURES_SETUP.md](FIXTURES_SETUP.md)** - Guide complet de configuration des fixtures
+- **[fixtures/README.md](../fixtures/README.md)** - Documentation technique des fixtures
+- **[fixtures/test-users.js](../fixtures/test-users.js)** - Code source des fixtures
+
+### Récapitulatif
+
+**Fixtures = Données de test réutilisables**
+
+| Type | Utilisation | Exemple |
+|------|-------------|---------|
+| **CONFIRMED_USER** | Connexion/Déconnexion | Compte déjà confirmé |
+| **generateTestUser()** | Inscription | Email unique à chaque fois |
+| **INVALID_USERS** | Tests d'erreur | Emails invalides, mauvais mots de passe |
+
+**Avantages**:
+- ✅ Pas besoin de confirmer les emails
+- ✅ Tests plus rapides
+- ✅ Code plus propre et réutilisable
+- ✅ Mots de passe sécurisés (dans .env, pas dans le code)
 
 ---
 

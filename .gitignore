@@ -21,7 +21,7 @@ playwright/.cache/
 # Optional eslint cache
 .eslintcache
 
-# dotenv environment variable files
+# dotenv environment variable files (contient les mots de passe de test)
 .env
 .env.development.local
 .env.test.local

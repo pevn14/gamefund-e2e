@@ -46,3 +46,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# rep temporaire des code source du projet à tester
+tmp-code-source-projet

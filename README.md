@@ -1,78 +1,57 @@
-# GameFund E2E Tests - Phase 4.5 Warmup
+# GameFund E2E Tests
 
 Tests E2E avec Playwright pour le projet GameFund (plateforme de crowdfunding React + Supabase).
 
 ## Vue d'ensemble
 
-Ce projet contient les tests de warmup Playwright pour la page `SupabaseTest` du projet GameFund. Ces tests servent à se familiariser avec Playwright avant d'implémenter les tests de production (Phase 5+).
+Ce projet contient les tests end-to-end Playwright pour l'application GameFund. Les tests couvrent l'authentification et la vérification de l'infrastructure.
 
 ## Statut des Tests
 
-**Dernière exécution**: 5 janvier 2026
+**Dernière mise à jour**: 7 janvier 2026
 
-- ✅ **13 tests passent** (52%)
-- ❌ **12 tests échouent** (48%)
+- ✅ **Tous les tests passent** (100%)
 
-### Tests qui passent ✅
+### Tests disponibles ✅
 
-1. **Chargement de page**:
-   - ✅ Affichage du titre "Test Supabase"
-   - ✅ Affichage des informations de configuration
+#### 1. Tests de santé (`tests/health/`)
+- ✅ Badge de connexion Supabase visible
+- ✅ Bouton "Retester la connexion" visible
+- ✅ Fonctionnalité de reconnexion opérationnelle
 
-2. **Connexion base de données**:
-   - ✅ Badge de connexion Supabase visible
-   - ✅ Bouton "Retester la connexion" fonctionne
-   - ✅ Section "État de connexion utilisateur" visible
+#### 2. Tests d'authentification (`tests/auth/`)
 
-3. **Validation des formulaires**:
-   - ✅ Tous les champs de signup sont visibles
-   - ✅ Tous les champs de signin sont visibles
-   - ✅ Labels affichés correctement
-   - ✅ Champs peuvent être remplis
+**Inscription** (`01-signup.spec.js`):
+- ✅ Validation du formulaire d'inscription
+- ✅ Affichage des labels des champs
+- ✅ Remplissage des champs
+- ✅ Création d'un nouveau compte avec succès
+- ✅ Message de succès pour email déjà confirmé (comportement de sécurité)
 
-4. **Erreurs de connexion**:
-   - ✅ Message d'erreur affiché avec credentials invalides
-
-### Tests qui échouent ❌
-
-**Raison principale**: Les inscriptions échouent avec l'erreur `"Email address is invalid"` car Supabase rejette les emails de test `@example.com`.
-
-Tests concernés:
-- ❌ Création de nouveau compte (signup)
-- ❌ Connexion après création de compte
-- ❌ Déconnexion après connexion
-- ❌ Flux complets signup → signin → signout
-- ❌ Affichage des informations utilisateur
-- ❌ Conservation des données entre connexions
-
-## Problème Identifié
-
-### L'erreur "Email address is invalid"
-
-Supabase **rejette les emails avec le domaine `@example.com`** car il les considère comme invalides ou de test. Cela empêche tous les tests d'inscription de fonctionner.
-
-**Solution recommandée**: Utiliser un vrai domaine d'email de test comme:
-- `@test.com`
-- `@mailinator.com`
-- `@10minutemail.com`
-- Ou configurer un domaine de test valide dans Supabase
+**Connexion/Déconnexion** (`02-signin-signout.spec.js`):
+- ✅ Message d'erreur si compte inexistant
+- ✅ Message d'erreur si email non confirmé
+- ✅ Connexion avec compte confirmé et déconnexion complète
 
 ## Structure du Projet
 
 ```
 gamefund-e2e/
 ├── tests/
-│   └── warmup/
-│       ├── page-load.spec.js           # Tests de chargement de page ✅
-│       ├── database-connection.spec.js # Tests de connexion DB ✅
-│       ├── signup.spec.js              # Tests d'inscription ❌
-│       ├── signin.spec.js              # Tests de connexion ❌
-│       ├── signout.spec.js             # Tests de déconnexion ❌
-│       └── complete-flow.spec.js       # Tests de flux complet ❌
+│   ├── health/                         # Tests de santé de l'infrastructure
+│   │   └── 01-database-connection.spec.js  # Vérification connexion Supabase ✅
+│   └── auth/                           # Tests d'authentification
+│       ├── 01-signup.spec.js           # Tests d'inscription ✅
+│       └── 02-signin-signout.spec.js   # Tests de connexion/déconnexion ✅
+├── fixtures/
+│   └── test-users.js                   # Fixtures des utilisateurs de test
+├── tmp-code-source-projet/             # Code source des composants React (référence)
 ├── docs/
 │   ├── TESTING.md                      # Stratégie complète de tests
 │   └── WARMUP_PLAN.md                  # Plan de travail Phase 4.5
 ├── playwright.config.js                # Configuration Playwright
+├── .env                                # Variables d'environnement (non versionné)
+├── .env.example                        # Template des variables d'environnement
 └── package.json                        # Dépendances et scripts
 ```
 
@@ -85,6 +64,48 @@ npm install
 # Installer les navigateurs Playwright
 npx playwright install
 ```
+
+## Configuration
+
+### Variables d'environnement
+
+Créer un fichier `.env` à la racine du projet (copier depuis `.env.example`):
+
+```bash
+# Nouvel utilisateur (pour les tests de signup)
+# ⚠️ Ce compte NE DOIT PAS exister dans Supabase
+# Utilisez une vraie adresse email pour éviter les bounces
+NEW_USER_EMAIL=nouveau@example.com
+NEW_USER_PASSWORD=MotDePasse123!
+NEW_USER_DISPLAY_NAME=Nouveau Utilisateur
+
+# Utilisateur confirmé (pour les tests de signin)
+# ⚠️ Ce compte DOIT exister et être confirmé dans Supabase
+TEST_USER_EMAIL=test@example.com
+TEST_USER_PASSWORD=MotDePasse123!
+TEST_USER_DISPLAY_NAME=Test User
+```
+
+### Prérequis pour les tests
+
+1. **Compte confirmé**: Créer manuellement un compte via `/signup` et confirmer l'email en cliquant sur le lien reçu
+2. **Variables .env**: Configurer les variables d'environnement avec les bons emails
+3. **Serveur de développement**: Le serveur démarre automatiquement (voir ci-dessous)
+
+### Serveur de développement
+
+Le serveur Vite du projet principal démarre **automatiquement** lors de l'exécution des tests grâce à la configuration `webServer` dans `playwright.config.js`:
+
+```javascript
+webServer: {
+  command: 'cd ../gamefund && npm run dev',
+  url: 'http://localhost:5173',
+  reuseExistingServer: !process.env.CI,
+  timeout: 120000,
+}
+```
+
+Pas besoin de démarrer manuellement le serveur !
 
 ## Utilisation
 
@@ -107,144 +128,79 @@ npm run test:headed
 npm run test:report
 ```
 
-### Lancer un test spécifique
+### Lancer des tests spécifiques
 
 ```bash
+# Tests de santé uniquement
+npx playwright test tests/health/
+
+# Tests d'authentification uniquement
+npx playwright test tests/auth/
+
 # Un seul fichier
-npx playwright test tests/warmup/page-load.spec.js
+npx playwright test tests/auth/01-signup.spec.js
 
 # Un seul test
-npx playwright test -g "devrait afficher la page de test"
+npx playwright test -g "devrait créer un nouveau compte"
 ```
 
 ### Générer du code automatiquement
 
 ```bash
-npx playwright codegen http://localhost:5173/supabase-test
+# Pour la page de test
+npx playwright codegen http://localhost:5173/
+
+# Pour la page de connexion
+npx playwright codegen http://localhost:5173/login
+
+# Pour la page d'inscription
+npx playwright codegen http://localhost:5173/signup
 ```
 
-## Configuration
+## Bonnes pratiques implémentées
 
-### Serveur de développement
+### 1. Fixtures de données
+- Utilisation de `fixtures/test-users.js` pour centraliser les données de test
+- Chargement depuis variables d'environnement `.env`
 
-Le serveur Vite du projet principal démarre **automatiquement** lors de l'exécution des tests grâce à la configuration `webServer` dans `playwright.config.js`:
+### 2. Sélecteurs robustes
+- Utilisation systématique de `data-testid` au lieu de sélecteurs CSS fragiles
+- Meilleure maintenabilité et résistance aux changements
 
-```javascript
-webServer: {
-  command: 'cd ../gamefund && npm run dev',
-  url: 'http://localhost:5173',
-  reuseExistingServer: !process.env.CI,
-  timeout: 120000,
-}
-```
+### 3. Timeouts adaptés
+- Augmentation des timeouts pour les opérations Supabase (10s au lieu de 5s)
+- Prise en compte de la latence réseau
 
-Pas besoin de démarrer manuellement le serveur!
+### 4. Tests flexibles
+- Acceptation de plusieurs messages d'erreur possibles selon l'état de la base
+- Tests exécutables indépendamment ou en suite
 
-### Environnement
+### 5. Documentation dans le code
+- Commentaires explicites sur les prérequis
+- TODOs pour les améliorations futures
 
-- **URL cible**: `http://localhost:5173/supabase-test`
+## Points d'attention
+
+### Comportements Supabase
+
+1. **Email bounces**: Supabase peut bloquer les emails de domaines invalides (ex: `@example.com`). Utilisez de vraies adresses email.
+
+2. **Messages de sécurité**: Supabase ne révèle pas si un email existe déjà lors de l'inscription (retourne toujours "Inscription réussie").
+
+3. **Confirmation email**: Les comptes doivent être confirmés via email avant de pouvoir se connecter.
+
+### Tests dépendants
+
+Le test `02-signin-signout.spec.js` peut dépendre de l'exécution préalable de `01-signup.spec.js` pour créer le compte `NEW_USER`. Le test gère cette dépendance en acceptant deux messages d'erreur possibles.
+
+## Environnement de test
+
+- **URL cible**: `http://localhost:5173`
 - **Navigateur**: Chromium (Chrome)
 - **Timeout par défaut**: 30000ms (30s)
 - **Screenshots**: En cas d'échec uniquement
 - **Traces**: Sur première réessai
-
-## Recommandations
-
-### 1. Résoudre le problème d'email ⚠️
-
-**Action immédiate**: Modifier les tests pour utiliser un domaine d'email valide accepté par Supabase.
-
-**Option A** - Modifier les tests:
-```javascript
-// Avant
-const email = `test${timestamp}@example.com`
-
-// Après
-const email = `test${timestamp}@test.com`
-```
-
-**Option B** - Configurer Supabase:
-- Désactiver la validation stricte des emails en développement
-- Ou ajouter `@example.com` à la liste blanche
-
-### 2. Améliorer la robustesse des tests
-
-**Ajouter des attentes explicites**:
-```javascript
-// Au lieu de juste cliquer et attendre
-await page.getByTestId('signup-submit-button').click()
-await page.waitForLoadState('networkidle') // Attendre que le réseau se stabilise
-
-// Ou attendre un changement d'état spécifique
-await page.waitForFunction(() => {
-  return document.querySelector('[data-testid="success-message"]') !== null ||
-         document.querySelector('[data-testid="error-message"]') !== null
-})
-```
-
-### 3. Tests isolés et cleanup
-
-Pour les tests qui créent des comptes, envisager:
-- Utiliser un compte de test réutilisable
-- Ou nettoyer la base de données après les tests
-- Ou utiliser un environnement de test dédié
-
-### 4. Créer des fixtures
-
-Créer `fixtures/test-users.json` avec des utilisateurs pré-créés:
-```json
-{
-  "validUser": {
-    "email": "testuser@test.com",
-    "password": "TestPass123!",
-    "displayName": "Test User"
-  }
-}
-```
-
-### 5. Patterns réutilisables pour Phase 5
-
-Les patterns qui fonctionnent bien:
-- ✅ Utilisation cohérente des `data-testid`
-- ✅ Timeouts augmentés pour les opérations Supabase
-- ✅ Vérifications multiples (message + état UI)
-- ✅ Tests de validation des formulaires
-
-## Prochaines étapes
-
-### Phase 5 - Tests d'authentification de production
-
-Une fois le problème d'email résolu:
-
-1. **Adapter ces tests pour les vraies pages**:
-   - `/signup` au lieu de `/supabase-test`
-   - `/login` au lieu de `/supabase-test`
-
-2. **Ajouter des Page Objects**:
-   ```
-   page-objects/
-   ├── LoginPage.js
-   ├── SignupPage.js
-   └── BasePage.js
-   ```
-
-3. **Ajouter des fixtures de données**:
-   ```
-   fixtures/
-   ├── test-users.json
-   └── test-projects.json
-   ```
-
-4. **Configurer CI/CD**:
-   - GitHub Actions
-   - Exécution automatique sur PR
-   - Rapports de tests
-
-## Ressources
-
-- [Documentation Playwright](https://playwright.dev/)
-- [TESTING.md](docs/TESTING.md) - Stratégie complète
-- [WARMUP_PLAN.md](docs/WARMUP_PLAN.md) - Plan détaillé Phase 4.5
+- **Workers**: 2 (tests parallélisés)
 
 ## Dépannage
 
@@ -277,8 +233,51 @@ Ou le mode UI pour un debug interactif:
 npm run test:ui
 ```
 
+### Problème avec les variables d'environnement
+
+Vérifier que le fichier `.env` existe et contient toutes les variables nécessaires:
+```bash
+cat .env
+```
+
+## Prochaines étapes
+
+### Phase suivante - Tests fonctionnels complets
+
+1. **Tests de projets**:
+   - Création de projet
+   - Modification de projet
+   - Suppression de projet
+   - Liste des projets
+
+2. **Tests de contributions**:
+   - Faire une contribution
+   - Voir l'historique des contributions
+   - Objectifs de financement
+
+3. **Page Objects**:
+   ```
+   page-objects/
+   ├── LoginPage.js
+   ├── SignupPage.js
+   ├── ProjectPage.js
+   └── BasePage.js
+   ```
+
+4. **CI/CD**:
+   - GitHub Actions
+   - Exécution automatique sur PR
+   - Rapports de tests
+
+## Ressources
+
+- [Documentation Playwright](https://playwright.dev/)
+- [TESTING.md](docs/TESTING.md) - Stratégie complète
+- [WARMUP_PLAN.md](docs/WARMUP_PLAN.md) - Plan détaillé Phase 4.5
+- [Playwright Best Practices](https://playwright.dev/docs/best-practices)
+
 ---
 
-**Version**: 1.0
-**Date**: 5 janvier 2026
-**Status**: Phase 4.5 (Warmup) - En cours
+**Version**: 2.0
+**Date**: 7 janvier 2026
+**Status**: Phase 4.5 - Tests d'authentification complétés ✅

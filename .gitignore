@@ -49,3 +49,9 @@ Thumbs.db
 
 # rep temporaire des code source du projet à tester
 tmp-code-source-projet
+
+# Playwright
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

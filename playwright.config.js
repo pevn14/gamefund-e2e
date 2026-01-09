@@ -1,8 +1,12 @@
-import { defineConfig, devices } from '@playwright/test'
-import 'dotenv/config'
+// @ts-check
+import { defineConfig, devices } from '@playwright/test';
+import 'dotenv/config';
 
+/**
+ * @see https://playwright.dev/docs/test-configuration
+ */
 export default defineConfig({
-  testDir: './tests',
+  testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -38,4 +42,5 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
-})
+});
+

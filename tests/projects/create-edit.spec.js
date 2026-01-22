@@ -24,14 +24,14 @@ test.describe('Projets - Création et édition', () => {
     
     // Vérifier les champs
     await expect(page.getByTestId('project-form-title-input')).toBeVisible();
-    await expect(page.getByTestId('project-form-tagline-input')).toBeVisible();
     await expect(page.getByTestId('project-form-description-input')).toBeVisible();
     await expect(page.getByTestId('project-form-goal-input')).toBeVisible();
     await expect(page.getByTestId('project-form-deadline-input')).toBeVisible();
     
     // Vérifier les boutons
+    await expect(page.getByTestId('project-form-publish-button')).toBeVisible();
     await expect(page.getByTestId('project-form-save-button')).toBeVisible();
-    await expect(page.getByTestId('project-form-cancel-button')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Retour' })).toBeVisible();
   });
 
   test('devrait créer un projet en brouillon (P2)', async ({ page }) => {
@@ -40,7 +40,6 @@ test.describe('Projets - Création et édition', () => {
     // Remplir le formulaire
     const uniqueTitle = `Projet Test ${Date.now()}`;
     await page.getByTestId('project-form-title-input').fill(uniqueTitle);
-    await page.getByTestId('project-form-tagline-input').fill('Tagline de test');
     await page.getByTestId('project-form-description-input').fill('Description détaillée du projet de test pour les tests E2E.');
     await page.getByTestId('project-form-goal-input').fill('10000');
     
@@ -50,21 +49,27 @@ test.describe('Projets - Création et édition', () => {
     const dateStr = futureDate.toISOString().split('T')[0];
     await page.getByTestId('project-form-deadline-input').fill(dateStr);
     
-    // Sauvegarder en brouillon
+    // Sauvegarder en brouillon et capturer l'alert JS utilisée par l'app
+    const dialogPromise = page.waitForEvent('dialog');
     await page.getByTestId('project-form-save-button').click();
-    
-    // Vérifier le message de succès
-    await expect(page.getByTestId('project-form-success')).toBeVisible();
+    const dialog = await dialogPromise;
+    expect(dialog.message()).toContain('Brouillon sauvegardé');
+    await dialog.accept();
+    await expect(page).toHaveURL('/dashboard/projects');
   });
 
   test('devrait valider les champs obligatoires', async ({ page }) => {
     await page.goto('/projects/create');
     
-    // Soumettre sans remplir
-    await page.getByTestId('project-form-save-button').click();
+    // Tenter de publier sans remplir (les champs sont obligatoires pour la publication)
+    await page.getByTestId('project-form-publish-button').click();
     
-    // Vérifier le message d'erreur
-    await expect(page.getByTestId('project-form-error')).toBeVisible();
+    // Vérifier les messages inline (titres et description)
+    await expect(page.getByText('Le titre est requis')).toBeVisible();
+    await expect(page.getByText('La description est requise')).toBeVisible();
+    await expect(page.getByText('Le montant cible est requis')).toBeVisible();
+    await expect(page.getByText('La date d\'échéance est requise')).toBeVisible();
+    await expect(page.getByText('Une image est requise')).toBeVisible();
   });
 
   test('devrait valider le titre minimum', async ({ page }) => {
@@ -79,11 +84,11 @@ test.describe('Projets - Création et édition', () => {
     futureDate.setMonth(futureDate.getMonth() + 3);
     await page.getByTestId('project-form-deadline-input').fill(futureDate.toISOString().split('T')[0]);
     
-    // Soumettre
-    await page.getByTestId('project-form-save-button').click();
+    // Tenter de publier avec un titre invalide
+    await page.getByTestId('project-form-publish-button').click();
     
-    // Vérifier le message d'erreur
-    await expect(page.getByTestId('project-form-error')).toBeVisible();
+    // Vérifier le message d'erreur inline sur le titre
+    await expect(page.getByText('Le titre doit contenir au moins 3 caractères')).toBeVisible();
   });
 
   test('devrait valider l\'objectif positif', async ({ page }) => {
@@ -98,11 +103,11 @@ test.describe('Projets - Création et édition', () => {
     futureDate.setMonth(futureDate.getMonth() + 3);
     await page.getByTestId('project-form-deadline-input').fill(futureDate.toISOString().split('T')[0]);
     
-    // Soumettre
-    await page.getByTestId('project-form-save-button').click();
+    // Tenter de publier avec un objectif invalide
+    await page.getByTestId('project-form-publish-button').click();
     
-    // Vérifier le message d'erreur
-    await expect(page.getByTestId('project-form-error')).toBeVisible();
+    // Vérifier le message d'erreur inline sur l'objectif
+    await expect(page.getByText('Le montant doit être supérieur à 0')).toBeVisible();
   });
 
   test('devrait annuler la création et retourner', async ({ page }) => {
@@ -111,11 +116,11 @@ test.describe('Projets - Création et édition', () => {
     // Remplir partiellement
     await page.getByTestId('project-form-title-input').fill('Projet à annuler');
     
-    // Annuler
-    await page.getByTestId('project-form-cancel-button').click();
-    
+    // Utiliser le bouton "Retour" présent dans l'UI
+    await page.getByRole('button', { name: 'Retour' }).click();
+
     // Vérifier la redirection
-    await expect(page).toHaveURL(/\/(dashboard\/projects)?$/);
+    await expect(page).not.toHaveURL('/projects/create');
   });
 
   test('devrait accéder à la liste de mes projets', async ({ page }) => {

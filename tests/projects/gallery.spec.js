@@ -57,8 +57,12 @@ test.describe('Projets - Galerie publique', () => {
     // Attendre le debounce et le chargement
     await page.waitForTimeout(500);
     
-    // Vérifier que la grille est toujours visible
-    await expect(page.getByTestId('projects-grid')).toBeVisible();
+    // Vérifier qu'on affiche soit des projets, soit l'état vide
+    const grid = page.getByTestId('projects-grid');
+    const emptyState = page.getByTestId('projects-grid-empty');
+    const gridVisible = await grid.isVisible();
+    const emptyVisible = await emptyState.isVisible();
+    expect(gridVisible || emptyVisible).toBeTruthy();
   });
 
   test('devrait filtrer les projets par statut', async ({ page }) => {
@@ -76,7 +80,7 @@ test.describe('Projets - Galerie publique', () => {
   test('devrait changer le tri des projets', async ({ page }) => {
     // Sélectionner un tri
     const sortFilter = page.getByTestId('projects-sort-filter');
-    await sortFilter.selectOption('most-funded');
+    await sortFilter.selectOption('goal_amount_desc');
     
     // Attendre le chargement
     await page.waitForTimeout(300);

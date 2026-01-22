@@ -29,15 +29,18 @@ test.describe('Authentification - Inscription', () => {
   test('devrait valider le format email', async ({ page }) => {
     // Remplir avec un email invalide
     await page.getByTestId('signup-displayname-input').fill('Test User');
-    await page.getByTestId('signup-email-input').fill('invalid-email');
+    const emailInput = page.getByTestId('signup-email-input');
+    await emailInput.fill('invalid-email');
     await page.getByTestId('signup-password-input').fill('Password123!');
     await page.getByTestId('signup-confirm-password-input').fill('Password123!');
     
     // Soumettre
     await page.getByTestId('signup-submit-button').click();
     
-    // Vérifier le message d'erreur
-    await expect(page.getByTestId('signup-error-message')).toBeVisible();
+    // Vérifier que la validation native bloque la soumission
+    const validationMessage = await emailInput.evaluate((el) => el.validationMessage);
+    expect(validationMessage).not.toBe('');
+    await expect(page).toHaveURL('/signup');
   });
 
   test('devrait valider la correspondance des mots de passe', async ({ page }) => {

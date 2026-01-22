@@ -805,4 +805,66 @@ test.describe('Authentification', () => {
 
 ---
 
-**Dernière mise à jour** : 19 janvier 2026
+## Changelog data-testid
+
+### 21 janvier 2026 - Synchronisation code/documentation
+
+**Note pour l'équipe de test** : Les data-testid suivants ont été ajoutés ou modifiés dans le code pour correspondre à cette documentation.
+
+#### Corrections effectuées
+
+| Fichier | Ancien data-testid | Nouveau data-testid |
+|---------|-------------------|---------------------|
+| ProjectFilters.jsx | `search-input` | `projects-search-input` |
+| ProjectFilters.jsx | `status-filter` | `projects-status-filter` |
+| ProjectFilters.jsx | `sort-select` | `projects-sort-filter` |
+| ProjectGrid.jsx | `project-grid-skeleton` | `projects-grid-loading` |
+| ProjectGrid.jsx | `project-grid-error` | `projects-grid-error` |
+| ProjectGrid.jsx | `project-grid-empty` | `projects-grid-empty` |
+| ProjectGrid.jsx | `project-grid` | `projects-grid` |
+| ProjectCard.jsx | `project-card-status-badge` | `project-card-badge` |
+| ProjectCard.jsx | `project-card-description` | `project-card-tagline` |
+| SignupPage.jsx | `signup-display-name-input` | `signup-displayname-input` |
+| MyProjectsPage.jsx | `filter-*-button` | `my-projects-filter-tabs` (wrapper) |
+| MyProjectsPage.jsx | `projects-grid` | `my-projects-grid` |
+| MyProjectsPage.jsx | `project-card` | `my-project-card` |
+| MyProjectsPage.jsx | `edit-project-button` | `my-project-card-edit-button` |
+| MyProjectsPage.jsx | `view-project-button` | `my-project-card-view-button` |
+| CreatorDashboardPage.jsx | `dashboard-stats-grid` | `creator-dashboard-stats` |
+| CreatorDashboardPage.jsx | `stat-total-projects` | `creator-dashboard-stat-total` |
+| CreatorDashboardPage.jsx | `stat-active-projects` | `creator-dashboard-stat-active` |
+| CreatorDashboardPage.jsx | `stat-total-collected` | `creator-dashboard-stat-collected` |
+| CreatorDashboardPage.jsx | `stat-total-donors` | `creator-dashboard-stat-donors` |
+| CreatorDashboardPage.jsx | `drafts-alert` | `creator-dashboard-drafts-alert` |
+
+#### Ajouts effectués
+
+| Fichier | data-testid ajouté |
+|---------|-------------------|
+| ProjectCard.jsx | `project-card-stats` |
+| ProjectCard.jsx | `project-card-creator` |
+| MyProjectsPage.jsx | `my-projects-page` |
+| MyProjectsPage.jsx | `my-projects-create-button` |
+| MyProjectsPage.jsx | `my-projects-empty` |
+| CreatorDashboardPage.jsx | `creator-dashboard-page` |
+| CreatorDashboardPage.jsx | `creator-dashboard-welcome` |
+| AdminDashboardPage.jsx | `admin-dashboard-page` |
+| AdminDashboardPage.jsx | `admin-dashboard-stats` |
+| AdminProjectsPage.jsx | `admin-projects-page` |
+| AdminProjectsPage.jsx | `admin-projects-search` |
+| AdminProjectsPage.jsx | `admin-projects-filter` |
+| AdminProjectsPage.jsx | `admin-project-row` |
+| AdminProjectsPage.jsx | `admin-project-status-select` |
+| AdminProjectsPage.jsx | `admin-project-delete-button` |
+| AdminUsersPage.jsx | `admin-users-page` |
+| AdminUsersPage.jsx | `admin-user-row` |
+| AdminUsersPage.jsx | `admin-user-role-select` |
+| AdminUsersPage.jsx | `admin-user-status-toggle` |
+
+#### Note importante
+
+Le data-testid `admin-users-search` est documenté dans ce guide mais **la fonctionnalité de recherche n'existe pas** dans AdminUsersPage. Si nécessaire, cette fonctionnalité devra être implémentée dans une future version.
+
+---
+
+**Dernière mise à jour** : 21 janvier 2026

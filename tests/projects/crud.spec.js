@@ -41,63 +41,102 @@ test.describe('Projets - CRUD complet', () => {
     await loginAsCreator(page);
   });
 
-  test('devrait créer, publier, éditer et supprimer un projet', async ({ page }) => {
+  test('devrait créer, éditer et supprimer un brouillon', async ({ page }) => {
+    // Auto-accept all native dialogs (alert, confirm) and log for debug
+    page.on('dialog', dialog => {
+      console.log(`Dialog [${dialog.type()}]: ${dialog.message()}`);
+      dialog.accept();
+    });
+
     const projectTitle = `Projet CRUD ${Date.now()}`;
     const description = 'Description complète pour le flux CRUD E2E.';
     const goal = '12000';
     const deadline = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+    // 1. Create project as draft
     await page.goto('/projects/create');
     await expect(page.getByTestId('create-project-page')).toBeVisible();
 
     await fillProjectForm(page, { title: projectTitle, description, goal, deadline });
-
-    const saveDialog = page.waitForEvent('dialog');
     await page.getByTestId('project-form-save-button').click();
-    const saveAlert = await saveDialog;
-    await saveAlert.accept();
     await expect(page).toHaveURL('/dashboard/projects');
 
+    // 2. Find the draft and edit it
     await page.getByRole('button', { name: /Brouillons/ }).click();
     const { editButton: draftEditButton } = await waitForProjectCard(page, projectTitle);
 
     await draftEditButton.click();
     await expect(page.getByTestId('edit-project-page')).toBeVisible();
 
-    await page.getByTestId('project-form-title-input').fill(`${projectTitle} (mis à jour)`);
+    // 3. Update title and save (draft remains draft)
+    const updatedTitle = `${projectTitle} (mis à jour)`;
+    await page.getByTestId('project-form-title-input').fill(updatedTitle);
+    await page.getByTestId('project-form-save-button').click();
+    // Wait for save to complete
+    await expect(page.getByTestId('project-form-save-button')).toBeEnabled({ timeout: PROJECT_LOAD_TIMEOUT });
+    // Verify title was saved
+    await expect(page.getByTestId('project-form-title-input')).toHaveValue(updatedTitle);
 
-    const publishDialog = page.waitForEvent('dialog');
+    // 4. Delete the draft project (RLS only allows deleting drafts)
+    await page.getByTestId('project-form-delete-button').click();
+    await page.waitForURL('/dashboard/projects', { timeout: PROJECT_LOAD_TIMEOUT });
+
+    // 5. Verify deletion
+    await page.getByRole('button', { name: /Tous/ }).click();
+    await expect(page.getByTestId('my-project-card').filter({ hasText: updatedTitle })).toHaveCount(0);
+  });
+
+  test('devrait créer un brouillon, le publier et vérifier les restrictions d\'édition', async ({ page }) => {
+    // Auto-accept all native dialogs (alert, confirm)
+    page.on('dialog', dialog => {
+      console.log(`Dialog [${dialog.type()}]: ${dialog.message()}`);
+      dialog.accept();
+    });
+
+    const projectTitle = `Projet Publish ${Date.now()}`;
+    const description = 'Description pour test de publication.';
+    const goal = '15000';
+    const deadline = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // 1. Create project as draft
+    await page.goto('/projects/create');
+    await expect(page.getByTestId('create-project-page')).toBeVisible();
+
+    await fillProjectForm(page, { title: projectTitle, description, goal, deadline });
+    await page.getByTestId('project-form-save-button').click();
+    await expect(page).toHaveURL('/dashboard/projects');
+
+    // 2. Find the draft and publish it
+    await page.getByRole('button', { name: /Brouillons/ }).click();
+    const { editButton: draftEditButton } = await waitForProjectCard(page, projectTitle);
+
+    await draftEditButton.click();
+    await expect(page.getByTestId('edit-project-page')).toBeVisible();
+
+    // 3. Publish the project
     await page.getByTestId('project-form-publish-button').click();
-    const publishAlert = await publishDialog;
-    await publishAlert.accept();
-    const confirmDialog = page.waitForEvent('dialog');
-    const confirmAlert = await confirmDialog;
-    await confirmAlert.accept();
-
     await page.waitForURL(/\/projects\/.*$/);
     await expect(page.getByTestId('project-detail-page')).toBeVisible();
+    await expect(page.getByTestId('project-detail-title')).toHaveText(projectTitle);
 
+    // 4. Edit the published project - verify restrictions
     await page.goto('/dashboard/projects');
     await page.getByRole('button', { name: /Actifs/ }).click();
     const { editButton: activeEditButton } = await waitForProjectCard(page, projectTitle);
 
     await activeEditButton.click();
     await expect(page.getByTestId('edit-project-page')).toBeVisible();
-    await page.getByTestId('project-form-description-input').fill('Description modifiée après publication.');
 
-    const saveDialog2 = page.waitForEvent('dialog');
+    // Verify title, goal and deadline are disabled for active projects
+    await expect(page.getByTestId('project-form-title-input')).toBeDisabled();
+    await expect(page.getByTestId('project-form-goal-input')).toBeDisabled();
+    await expect(page.getByTestId('project-form-deadline-input')).toBeDisabled();
+
+    // 5. Update description (allowed for active projects)
+    const newDescription = 'Description modifiée après publication.';
+    await page.getByTestId('project-form-description-input').fill(newDescription);
     await page.getByTestId('project-form-save-button').click();
-    const saveAlert2 = await saveDialog2;
-    await saveAlert2.accept();
-
-    await page.getByTestId('project-form-delete-button').click();
-    const deleteDialog1 = await page.waitForEvent('dialog');
-    await deleteDialog1.accept();
-    const deleteDialog2 = await page.waitForEvent('dialog');
-    await deleteDialog2.accept();
-
-    await page.waitForURL('/dashboard/projects');
-    await page.getByRole('button', { name: /Tous/ }).click();
-    await expect(page.getByTestId('my-project-card').filter({ hasText: projectTitle })).toHaveCount(0);
+    await expect(page.getByTestId('project-form-save-button')).toBeEnabled({ timeout: PROJECT_LOAD_TIMEOUT });
+    await expect(page.getByTestId('project-form-description-input')).toHaveValue(newDescription);
   });
 });

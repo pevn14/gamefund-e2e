@@ -72,8 +72,9 @@ test.describe('Projets - CRUD complet', () => {
     const updatedTitle = `${projectTitle} (mis à jour)`;
     await page.getByTestId('project-form-title-input').fill(updatedTitle);
     await page.getByTestId('project-form-save-button').click();
-    // Wait for save to complete
+    // Wait for save to complete (button re-enabled + refetch completed)
     await expect(page.getByTestId('project-form-save-button')).toBeEnabled({ timeout: PROJECT_LOAD_TIMEOUT });
+    await page.waitForTimeout(500); // Attendre que le refetch soit complet
     // Verify title was saved
     await expect(page.getByTestId('project-form-title-input')).toHaveValue(updatedTitle);
 
@@ -138,5 +139,9 @@ test.describe('Projets - CRUD complet', () => {
     await page.getByTestId('project-form-save-button').click();
     await expect(page.getByTestId('project-form-save-button')).toBeEnabled({ timeout: PROJECT_LOAD_TIMEOUT });
     await expect(page.getByTestId('project-form-description-input')).toHaveValue(newDescription);
+
+    // 6. Cleanup: delete the project (admin required for active projects)
+    await page.getByTestId('project-form-delete-button').click();
+    await page.waitForURL('/dashboard/projects', { timeout: PROJECT_LOAD_TIMEOUT });
   });
 });

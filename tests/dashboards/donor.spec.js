@@ -33,24 +33,23 @@ test.describe('Dashboards - Donateur', () => {
 
   test('devrait afficher la grille des projets soutenus', async ({ page }) => {
     await page.goto('/donor-dashboard');
-    
-    // Vérifier la grille ou l'état vide
-    const grid = page.getByTestId('donor-dashboard-projects-grid');
-    const empty = page.getByTestId('donor-dashboard-empty');
-    
-    const hasContent = await grid.isVisible() || await empty.isVisible();
-    expect(hasContent).toBeTruthy();
+
+    // Auto-retry évite la race condition pendant le chargement
+    await expect(
+      page.getByTestId('donor-dashboard-projects-grid')
+        .or(page.getByTestId('donor-dashboard-empty'))
+    ).toBeVisible();
   });
 
   test('devrait afficher les donations récentes', async ({ page }) => {
     await page.goto('/donor-dashboard');
-    
-    // Vérifier la section donations récentes
-    const recentDonations = page.getByTestId('donor-dashboard-recent-donations');
-    const empty = page.getByTestId('donor-dashboard-empty');
-    
-    const hasContent = await recentDonations.isVisible() || await empty.isVisible();
-    expect(hasContent).toBeTruthy();
+
+    // Auto-retry évite la race condition pendant le chargement
+    await expect(
+      page.getByTestId('donor-dashboard-recent-donations')
+        .or(page.getByTestId('donor-dashboard-empty'))
+        .first()
+    ).toBeVisible();
   });
 
   test('devrait afficher le bouton voir tous mes dons', async ({ page }) => {
@@ -77,12 +76,12 @@ test.describe('Dashboards - Donateur', () => {
 
   test('devrait afficher l\'état vide si aucune donation', async ({ page }) => {
     await page.goto('/donor-dashboard');
-    
-    // Vérifier l'état vide ou le contenu
-    const empty = page.getByTestId('donor-dashboard-empty');
-    const stats = page.getByTestId('donor-dashboard-stats');
-    
-    const hasContent = await empty.isVisible() || await stats.isVisible();
-    expect(hasContent).toBeTruthy();
+
+    // Auto-retry évite la race condition pendant le chargement
+    await expect(
+      page.getByTestId('donor-dashboard-empty')
+        .or(page.getByTestId('donor-dashboard-stats'))
+        .first()
+    ).toBeVisible();
   });
 });

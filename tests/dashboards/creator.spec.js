@@ -93,13 +93,11 @@ test.describe('Dashboards - Créateur', () => {
 
   test('devrait afficher l\'état vide pour un nouveau créateur', async ({ page }) => {
     await page.goto('/dashboard');
-    
-    // L'état vide peut ou non être visible selon les données
-    const emptyState = page.getByTestId('creator-dashboard-empty');
-    const recentProjects = page.getByTestId('creator-dashboard-recent-projects');
-    
-    // L'un ou l'autre devrait être visible
-    const hasContent = await emptyState.isVisible() || await recentProjects.isVisible();
-    expect(hasContent).toBeTruthy();
+
+    // L'un ou l'autre devrait être visible (auto-retry évite la race condition)
+    await expect(
+      page.getByTestId('creator-dashboard-empty')
+        .or(page.getByTestId('creator-dashboard-recent-projects'))
+    ).toBeVisible();
   });
 });

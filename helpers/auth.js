@@ -40,12 +40,28 @@ export const users = {
  * @param {string} email - Email de l'utilisateur
  * @param {string} password - Mot de passe
  */
-export async function login(page, email, password) {
-  await page.goto('/login');
-  await page.getByTestId('login-email-input').fill(email);
-  await page.getByTestId('login-password-input').fill(password);
-  await page.getByTestId('login-submit-button').click();
-  await page.waitForURL('/');
+export async function login(page, email, password, { maxRetries = 3 } = {}) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    await page.goto('/login');
+    await page.getByTestId('login-email-input').fill(email);
+    await page.getByTestId('login-password-input').fill(password);
+    await page.getByTestId('login-submit-button').click();
+
+    try {
+      await page.waitForURL('/', { timeout: 10000 });
+      return;
+    } catch {
+      // Vérifier si c'est un rate limit
+      const rateLimited = await page.locator('text=/rate limit/i').isVisible();
+      if (rateLimited && attempt < maxRetries) {
+        const delay = attempt * 2000;
+        console.log(`Rate limit détecté, retry ${attempt}/${maxRetries} après ${delay}ms...`);
+        await page.waitForTimeout(delay);
+        continue;
+      }
+      throw new Error(`Login échoué après ${attempt} tentative(s)`);
+    }
+  }
 }
 
 /**

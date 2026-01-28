@@ -8,9 +8,11 @@ Ce projet contient les tests end-to-end Playwright pour l'application GameFund. 
 
 ## Statut des Tests
 
-**Dernière mise à jour**: 7 janvier 2026
+**Dernière mise à jour**: 28 janvier 2026
 
-- ✅ **Tous les tests passent** (100%)
+- ✅ **129 tests passent** (126 passed + 3 flaky avec retries)
+- ⏭️ **2 tests skipped** (test-orphan-cleanup, admin users management)
+- 🧹 **Nettoyage automatique** des projets orphelins après chaque run
 
 ### Tests disponibles ✅
 
@@ -204,6 +206,59 @@ node scripts/cleanup-orphan-projects.js
 
 **Note**: Le script `cleanup-orphan-projects.js` doit être mis à jour avec les IDs des projets à nettoyer.
 
+## Problèmes connus et workarounds
+
+### 1. React Query - Cache non invalidé après mutation
+
+**Problème**: Le formulaire EditProjectPage ne refetch pas automatiquement après `updateProject`, même après 30s.
+
+**Cause**: React Query ne invalide pas le cache après la mutation.
+
+**Workaround E2E** (appliqué):
+```javascript
+// Après la sauvegarde, recharger la page pour forcer le refetch
+await page.getByTestId('project-form-save-button').click();
+await expect(page.getByTestId('project-form-save-button')).toBeEnabled();
+await page.reload(); // Force refetch
+await expect(page.getByTestId('edit-project-page')).toBeVisible();
+```
+
+**Fix permanent requis** (côté app):
+```javascript
+// Dans EditProjectPage.jsx
+const mutation = useMutation({
+  mutationFn: updateProject,
+  onSuccess: () => {
+    queryClient.invalidateQueries(['project', projectId]);
+  }
+});
+```
+
+**Fichiers concernés**: `tests/projects/crud.spec.js:77`
+
+### 2. Tests flaky en exécution parallèle
+
+**Problème**: Certains tests sont instables lors de l'exécution parallèle (crud, gallery).
+
+**Workaround**: Configuration de retries automatiques
+```javascript
+// playwright.config.js
+retries: process.env.CI ? 2 : 0,  // 2 retries en CI
+```
+
+**Tests concernés**:
+- `tests/projects/crud.spec.js` (2 tests)
+- `tests/projects/gallery.spec.js:52` (recherche textuelle)
+
+**Status**: Passent avec 1 retry maximum
+
+### 3. Race conditions résolues
+
+**Problèmes résolus**:
+- ✅ Dashboard tests: `.isVisible()` → `.or().toBeVisible()` avec auto-retry
+- ✅ CRUD save: `waitForTimeout(500)` → `expect().toHaveValue()` avec timeout
+- ✅ Donations modals: Rendu conditionnel corrigé (compact variant)
+
 ## Bonnes pratiques implémentées
 
 ### 1. Fixtures de données
@@ -227,8 +282,20 @@ node scripts/cleanup-orphan-projects.js
 - Garantit une base de données propre après chaque exécution
 - Fonctionne même si les tests échouent
 
-### 6. Documentation dans le code
-- Commentaires explicites sur les prérequis
+### 6. Auto-retry et gestion des race conditions
+- Utilisation systématique d'assertions auto-retry au lieu de `waitForTimeout()`
+- Pattern `.or()` pour gérer les états conditionnels (liste vide vs données)
+- Exemple: `expect(list.or(emptyState)).toBeVisible()` au lieu de `isVisible()`
+- Évite les race conditions lors des transitions d'état React
+
+### 7. Retries automatiques en CI
+- Configuration de retries pour gérer les tests flaky
+- 2 retries en environnement CI, 0 en local
+- Permet d'identifier rapidement les vrais problèmes vs instabilités réseau
+
+### 8. Documentation dans le code
+- Commentaires explicites sur les prérequis et workarounds
+- Documentation des bugs applicatifs nécessitant un fix permanent
 - TODOs pour les améliorations futures
 
 ## Points d'attention
@@ -292,34 +359,78 @@ Vérifier que le fichier `.env` existe et contient toutes les variables nécessa
 cat .env
 ```
 
+### Tests flaky ou instables
+
+Si un test échoue de manière intermittente:
+
+1. **Relancer avec retries**:
+   ```bash
+   npx playwright test --retries=2
+   ```
+
+2. **Tester en isolation**:
+   ```bash
+   npx playwright test tests/path/to/test.spec.js:line
+   ```
+
+3. **Vérifier les problèmes connus**:
+   - React Query cache: tests CRUD nécessitent `page.reload()`
+   - Race conditions: utiliser auto-retry patterns au lieu de `waitForTimeout()`
+   - Tests parallèles: certains tests sont sensibles à l'exécution parallèle
+
+4. **Nettoyage manuel**:
+   ```bash
+   # Si des projets orphelins causent des problèmes
+   node scripts/cleanup-orphan-projects.js
+   ```
+
+### Projets orphelins après tests
+
+Le global teardown nettoie automatiquement, mais si des projets persistent:
+```bash
+# 1. Identifier les projets (titre commence par "Projet")
+# 2. Les supprimer via l'interface admin (/admin/projects)
+# 3. Ou utiliser le script de nettoyage manuel
+```
+
 ## Prochaines étapes
 
-### Phase suivante - Tests fonctionnels complets
+### Améliorations techniques
 
-1. **Tests de projets**:
-   - Création de projet
-   - Modification de projet
-   - Suppression de projet
-   - Liste des projets
+1. **Fix permanent React Query**:
+   - Corriger l'invalidation du cache dans EditProjectPage
+   - Remplacer le workaround `page.reload()` par une vraie solution
+   - Fichier: `../gamefund/src/pages/creator/EditProjectPage.jsx`
 
-2. **Tests de contributions**:
-   - Faire une contribution
-   - Voir l'historique des contributions
-   - Objectifs de financement
+2. **Stabilisation tests flaky**:
+   - Investiguer les race conditions dans tests parallèles
+   - Ajouter des attentes spécifiques au lieu de retries génériques
+   - Tests concernés: `crud.spec.js`, `gallery.spec.js:52`
 
-3. **Page Objects**:
+3. **Page Objects Pattern** (optionnel):
    ```
    page-objects/
-   ├── LoginPage.js
-   ├── SignupPage.js
-   ├── ProjectPage.js
-   └── BasePage.js
+   ├── LoginPage.js      # Helpers pour login/signup
+   ├── ProjectPage.js    # Helpers pour CRUD projets
+   ├── DonationPage.js   # Helpers pour donations
+   └── BasePage.js       # Méthodes communes
    ```
 
 4. **CI/CD**:
-   - GitHub Actions
+   - GitHub Actions workflow
    - Exécution automatique sur PR
-   - Rapports de tests
+   - Rapports de tests avec artefacts
+   - Badge de statut dans le README
+
+5. **Tests de performance**:
+   - Mesurer les temps de chargement des pages critiques
+   - Détecter les régressions de performance
+   - Utiliser Lighthouse CI
+
+6. **Tests d'accessibilité**:
+   - Intégrer @axe-core/playwright
+   - Vérifier WCAG 2.1 niveau AA
+   - Tests sur navigation au clavier
 
 ## Ressources
 
@@ -330,6 +441,21 @@ cat .env
 
 ---
 
-**Version**: 2.0
-**Date**: 7 janvier 2026
-**Status**: Phase 4.5 - Tests d'authentification complétés ✅
+**Version**: 3.0
+**Date**: 28 janvier 2026
+**Status**: Suite complète E2E - 129 tests (auth, dashboards, projets, donations, profils, navigation) ✅
+
+**Couverture**:
+- Authentification (signup, login, session)
+- Dashboards (créateur, donateur, admin)
+- Projets (CRUD complet, galerie, filtrage, création)
+- Donations (flux complet, mes donations, donations reçues)
+- Profils (édition, page créateurs)
+- Navigation (header, footer)
+
+**Améliorations récentes**:
+- ✅ Nettoyage automatique des projets orphelins (globalTeardown)
+- ✅ Correction race conditions avec auto-retry patterns
+- ✅ Workaround React Query cache issue
+- ✅ Retries automatiques pour tests flaky
+- ✅ Tests donations avec cleanup complet

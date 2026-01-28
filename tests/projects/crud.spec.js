@@ -72,11 +72,9 @@ test.describe('Projets - CRUD complet', () => {
     const updatedTitle = `${projectTitle} (mis à jour)`;
     await page.getByTestId('project-form-title-input').fill(updatedTitle);
     await page.getByTestId('project-form-save-button').click();
-    // Wait for save to complete (button re-enabled + refetch completed)
+    // Wait for save to complete and form to refetch with new values
     await expect(page.getByTestId('project-form-save-button')).toBeEnabled({ timeout: PROJECT_LOAD_TIMEOUT });
-    await page.waitForTimeout(500); // Attendre que le refetch soit complet
-    // Verify title was saved
-    await expect(page.getByTestId('project-form-title-input')).toHaveValue(updatedTitle);
+    await expect(page.getByTestId('project-form-title-input')).toHaveValue(updatedTitle, { timeout: PROJECT_LOAD_TIMEOUT });
 
     // 4. Delete the draft project (RLS only allows deleting drafts)
     await page.getByTestId('project-form-delete-button').click();

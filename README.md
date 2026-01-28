@@ -157,6 +157,53 @@ npx playwright codegen http://localhost:5173/login
 npx playwright codegen http://localhost:5173/signup
 ```
 
+## Nettoyage automatique des projets orphelins
+
+Le projet inclut un système de **nettoyage automatique** qui s'exécute après chaque suite de tests pour supprimer les projets de test orphelins.
+
+### Comment ça fonctionne
+
+1. **Global Teardown** (`global-teardown.js`):
+   - S'exécute automatiquement après tous les tests
+   - Recherche tous les projets dont le titre commence par "Projet"
+   - Change leur statut à `cancelled` puis les supprime
+   - Affiche un rapport de nettoyage dans la console
+
+2. **Configuration** (`playwright.config.js`):
+   ```javascript
+   globalTeardown: './global-teardown.js'
+   ```
+
+3. **Processus de suppression**:
+   - Étape 1: Statut → `cancelled` (requis par les RLS policies)
+   - Étape 2: Suppression définitive
+
+### Exemple de sortie
+
+```
+🧹 Global Teardown: Recherche de projets orphelins...
+⚠️  2 projet(s) orphelin(s) détecté(s)
+  → Nettoyage: Projet Test 1769590097097
+  ✓ Supprimé
+  → Nettoyage: Projet Publish 1769589957443
+  ✓ Supprimé
+✓ 2 projet(s) orphelin(s) nettoyé(s)
+```
+
+### Nettoyage manuel
+
+Si besoin de nettoyer manuellement les projets orphelins:
+
+```bash
+# Démarrer le serveur de dev
+cd ../gamefund && npm run dev
+
+# Dans un autre terminal, exécuter le script
+node scripts/cleanup-orphan-projects.js
+```
+
+**Note**: Le script `cleanup-orphan-projects.js` doit être mis à jour avec les IDs des projets à nettoyer.
+
 ## Bonnes pratiques implémentées
 
 ### 1. Fixtures de données
@@ -175,7 +222,12 @@ npx playwright codegen http://localhost:5173/signup
 - Acceptation de plusieurs messages d'erreur possibles selon l'état de la base
 - Tests exécutables indépendamment ou en suite
 
-### 5. Documentation dans le code
+### 5. Nettoyage automatique
+- Global teardown qui supprime automatiquement les projets de test orphelins
+- Garantit une base de données propre après chaque exécution
+- Fonctionne même si les tests échouent
+
+### 6. Documentation dans le code
 - Commentaires explicites sur les prérequis
 - TODOs pour les améliorations futures
 
